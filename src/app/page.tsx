@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth-client";
 import { useState } from "react";
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
   const [name, setName] = useState<string>("")
@@ -10,6 +11,8 @@ export default function Home() {
   const [password, setPassword] = useState<string>("")
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const { data: session } = authClient.useSession() 
+
+  const router = useRouter()
 
 
   const onSubmit = async () => {
@@ -85,7 +88,10 @@ export default function Home() {
     return (
       <div>
         <p>Logged in as {session.user.name}</p>
-        <Button onClick={() => authClient.signOut()}>
+        <Button onClick={() =>{
+          authClient.signOut()
+          router.push('/sign-in')
+          }}>
           SignOut
         </Button>
       </div>
