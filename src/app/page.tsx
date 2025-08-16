@@ -1,167 +1,22 @@
-"use client"
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { authClient } from "@/lib/auth-client";
-import { useState } from "react";
-import { useRouter } from 'next/navigation';
+import { auth } from "@/lib/auth";
+import { HomeView } from "@/modules/home/ui/views/home-views";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 
-export default function Home() {
-  const [name, setName] = useState<string>("")
-  const [email, setEmail] = useState<string>("")
-  const [password, setPassword] = useState<string>("")
-  const [isLoading, setIsLoading] = useState<boolean>(false)
-  const { data: session } = authClient.useSession() 
+export default async function page() {
+  //so here we are doing server-side call For API routes, SSR, middleware and authClient.getSession() and here we are doing client side call For React components, browser code in both we are doing same work
 
-  const router = useRouter()
+  const session = await auth.api.getSession({ // so this is how we can excess sessions on server side
+    headers: await headers(),
+  })
 
-
-  const onSubmit = async () => {
-    // Basic validation
-    if (!name.trim()) {
-      alert('Name is required');
-      return;
-    }
-    if (!email) {
-      alert('Email is required');
-      return;
-    }
-    if (!password) {
-      alert('Password is required');
-      return;
-    }
-    if (password.length < 6) {
-      alert('Password must be at least 6 characters');
-      return;
-    }
-
-    setIsLoading(true);
-    
-    try {
-      await authClient.signUp.email({
-        name: name,
-        email: email,
-        password: password,
-      }, {
-        onSuccess: () => {
-          // redirect to the dashboard or sign in page
-          alert('User created successfully!');
-          // Optional: Reset form
-          setName("");
-          setEmail("");
-          setPassword("");
-        },
-        onError: (ctx) => {
-          // display the error message
-          console.error('Sign up error:', ctx.error);
-          alert(ctx.error.message);
-        },
-      });
-    } catch (error) {
-      console.error('Unexpected error:', error);
-      alert('An unexpected error occurred. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-
-  }
-  const onLogin = async () =>{
-    await authClient.signIn.email({
-      email: email,
-      password,
-    }, {
-      onSuccess: () => {
-        // redirect to the dashboard or sign in page
-        alert('User is logged in successfully!');
-        // Optional: Reset form
-        setEmail("");
-        setPassword("");
-      },
-      onError: (ctx) => {
-        // display the error message
-        console.error('Sign in error:', ctx.error);
-        alert(ctx.error.message);
-      },
-    });
-  }
-  
-  if(session){
-    return (
-      <div>
-        <p>Logged in as {session.user.name}</p>
-        <Button onClick={() =>{
-          authClient.signOut()
-          router.push('/sign-in')
-          }}>
-          SignOut
-        </Button>
-      </div>
-    )
+  if(!session){ // if user had dont logged in then it will redirected to sign-in page
+    redirect('/sign-in') // if you log in and then sign-out thne this will not re-redirect to sign-in page becouse it will not actively look for session so for this signOut gives us an method
   }
 
   return (
     <div>
-      <div className="grid gap-3 p-5 max-w-md mx-auto">
-        <h1 className="text-2xl font-bold mb-4">Sign Up</h1>
-        
-        <Input 
-          type="text"
-          onChange={(e) => setName(e.target.value)} 
-          value={name} 
-          placeholder="Jon Doe"
-          disabled={isLoading}
-        />
-        
-        <Input 
-          type="email"
-          onChange={(e) => setEmail(e.target.value)} 
-          value={email} 
-          placeholder="jondoe@gmail.com"
-          disabled={isLoading}
-        />
-        
-        <Input 
-          type="password"
-          onChange={(e) => setPassword(e.target.value)} 
-          value={password} 
-          placeholder="*********"
-          disabled={isLoading}
-        />
-        
-        <Button 
-          variant="default" 
-          onClick={onSubmit}
-          disabled={isLoading}
-        >
-          {isLoading ? 'Creating Account...' : 'Sign Up'}
-        </Button>
-      </div>
-      <div className="grid gap-3 p-5 max-w-md mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Sign in</h1>
-      
-      <Input 
-        type="email"
-        onChange={(e) => setEmail(e.target.value)} 
-        value={email} 
-        placeholder="jondoe@gmail.com"
-        disabled={isLoading}
-      />
-      
-      <Input 
-        type="password"
-        onChange={(e) => setPassword(e.target.value)} 
-        value={password} 
-        placeholder="*********"
-        disabled={isLoading}
-      />
-      
-      <Button 
-        variant="default" 
-        onClick={onLogin}
-        disabled={isLoading}
-      >
-        {isLoading ? 'Creating Account...' : 'Sign Up'}
-      </Button>
+      <HomeView />
     </div>
-  </div>
-  );
+  )
 }

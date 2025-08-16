@@ -12,6 +12,7 @@ import { useForm } from "react-hook-form";
 import { authClient } from "@/lib/auth-client";
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { FaGithub, FaGoogle} from 'react-icons/fa'
 import { useState } from 'react';
 
 // the reason why we are making an saprate sign-in-view becouse we dont want ki all things are render on client side the logic render client side beocuse
@@ -27,35 +28,14 @@ const formSchema = z.object({
     path: ["confirmPassword"],
 })
 
-
 function SignUpView(){
-
     const router = useRouter()
     const [error, setError] = useState<string | null>(null)
     const [isPending, setPeding] = useState(false)
 
-    const onSubmit = async (data: z.infer<typeof formSchema>) => {
-        setError(null)
-        setPeding(true)
-        authClient.signUp.email(
-            {
-                name: data.name,
-                email: data.email,
-                password: data.password,
-                // confirmPassword: data.confirmPassword
-            },
-            {
-                onSuccess: () =>{
-                    router.push('/')
-                    setPeding(false)
-                },
-                onError: ({error}) =>{
-                    setError(error.message)
-                    setPeding(false)
-                }
-            }
-        )
-    }
+    // yahan pe form ko useForm ke andar initialize kar rahe hain, lekin problem yeh hai ki jab sign up hota hai, 
+    // to session update nahi hota ya page reload nahi hota, isliye home page pe purana naam dikh raha hai.
+    // Solution: sign up ke baad router.refresh() bhi call karo, taki session update ho jaye aur naya naam dikhe.
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -66,6 +46,57 @@ function SignUpView(){
             confirmPassword: ''
         }
     })
+
+    const onSubmit = async (data: z.infer<typeof formSchema>) => {
+        setError(null)
+        setPeding(true)
+        authClient.signUp.email(
+            {
+                name: data.name,
+                email: data.email,
+                password: data.password,
+                callbackURL: '/'
+                // confirmPassword: data.confirmPassword
+            },
+            {
+                onSuccess: () =>{
+                    setPeding(false)
+                    // yahan pe router.push('/') ke baad router.refresh() bhi call karo
+                    router.push('/')
+                    router.refresh() // yeh line add karo, taki session update ho jaye aur naya naam dikhe
+                },
+                onError: ({error}) =>{
+                    setError(error.message)
+                    setPeding(false)
+                }
+            }
+        )
+    }
+
+    const onSocial = async (provider: 'github' | 'google') => {
+        setError(null)
+        setPeding(true)
+
+        authClient.signIn.social(
+            {
+                provider: provider,
+                callbackURL: '/'
+
+            },
+            {
+                onSuccess: () =>{
+                    setPeding(false)
+                    // Social sign in ke baad bhi refresh kar do
+                    router.push('/')
+                    router.refresh()
+                },
+                onError: ({error}) =>{
+                    setError(error.message)
+                    setPeding(false)
+                }
+            }
+        )
+    }
 
     return( 
         <div className='h-full max-h-full '>
@@ -144,7 +175,7 @@ function SignUpView(){
                                         <AlertTitle>{error}</AlertTitle>
                                     </Alert>
                                 )}
-                                <Button className='w-full' type='submit' disabled={isPending}>Sign in</Button>
+                                <Button className='w-full' type='submit' disabled={isPending}>Sign up</Button>
                                 <div className='after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t'>
                                     <span className="bg-card text-muted-foreground relative z-10 px-2">
                                         Or continue with
@@ -156,16 +187,22 @@ function SignUpView(){
                                         type='button'
                                         className='w-full'
                                         disabled={isPending}
+                                        onClick={() =>{
+                                            onSocial('github')
+                                        }}
                                     >
-                                        Goole
+                                        <FaGithub />
                                     </Button>
-                                    <Button
+                                      <Button
                                         variant='outline'
                                         type='button'
                                         className='w-full'
                                         disabled={isPending}
-                                    >
-                                        Github
+                                        onClick={() =>{
+                                            onSocial('google')
+                                        }}
+                                    >  
+                                        <FaGoogle /> 
                                     </Button>
                                 </div>
                                 <div className='flex flex-col items-center text-muted-foreground'>
@@ -195,6 +232,4 @@ function SignUpView(){
 
 }
 
-
 export default SignUpView
-
