@@ -10,8 +10,9 @@ import { Form,  FormControl, FormField, FormItem,  FormLabel, FormMessage } from
 import { Alert, AlertTitle } from "@/components/ui/alert";
 import { useForm } from "react-hook-form";
 import { authClient } from "@/lib/auth-client";
+import { FaGithub, FaGoogle } from 'react-icons/fa'
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+// import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 // the reason why we are making an saprate sign-in-view becouse we dont want ki all things are render on client side the logic render client side beocuse
@@ -25,7 +26,7 @@ const formSchema = z.object({
 
 function SignInView(){
 
-    const router = useRouter()
+    // const router = useRouter()
     const [error, setError] = useState<string | null>(null)
     const [isPending, setPeding] = useState(false)
 
@@ -35,11 +36,12 @@ function SignInView(){
         authClient.signIn.email(
             {
                 email: data.email,
-                password: data.password
+                password: data.password,
+                callbackURL: '/'
             },
             {
                 onSuccess: () =>{
-                    router.push('/')
+                    // router.push('/')
                     setPeding(false)
                 },
                 onError: ({error}) =>{
@@ -49,6 +51,28 @@ function SignInView(){
             }
         )
     }
+    const onSocial = async (provider: 'github' | 'google') => {
+        setError(null)
+        setPeding(true)
+
+        authClient.signIn.social(
+            {
+                provider: provider,
+                callbackURL: '/'
+
+            },
+            {
+                onSuccess: () =>{
+                    setPeding(false)
+                },
+                onError: ({error}) =>{
+                    setError(error.message)
+                    setPeding(false)
+                }
+            }
+        )
+    }
+
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -117,16 +141,28 @@ function SignInView(){
                                         type='button'
                                         className='w-full'
                                         disabled={isPending}
+                                        onClick={() =>{
+                                            // authClient.signIn.social({
+                                            //     provider: 'github',
+                                            // })
+                                            onSocial('github')
+                                        }}
                                     >
-                                        Goole
+                                        <FaGithub />
                                     </Button>
                                     <Button
                                         variant='outline'
                                         type='button'
                                         className='w-full'
                                         disabled={isPending}
+                                        onClick={() =>{
+                                            // authClient.signIn.social({
+                                            //     provider: 'google',
+                                            // })
+                                            onSocial('google') 
+                                        }}
                                     >
-                                        Github
+                                        <FaGoogle /> 
                                     </Button>
                                 </div>
                                 <div className='flex flex-col items-center text-muted-foreground'>
