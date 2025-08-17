@@ -1,4 +1,5 @@
 import { auth } from "@/lib/auth";
+// import { DashbaordSideBar } from "@/modules/dashboard/ui/components/dashboard-sidebar";
 import { HomeView } from "@/modules/home/ui/views/home-views";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -16,6 +17,7 @@ export default async function page() {
 
   return (
     <div>
+      {/* <DashbaordSideBar /> */}
       <HomeView />
     </div>
   )
