@@ -1,5 +1,5 @@
 interface prop{
-    children: React.ReactNode
+  children: React.ReactNode
 }
 
 function Layout({children}: prop) {

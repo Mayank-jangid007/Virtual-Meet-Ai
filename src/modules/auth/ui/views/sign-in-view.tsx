@@ -174,7 +174,7 @@ function SignInView(){
                             </div>
                         </form>
                     </Form>
-                    <div className="bg-radial from-green-300 to-green-900 relative hidden md:flex flex-col items-center justify-center gap-y-4"> {/*this relative hidden when apply's when screen size become small means phone seide and the div get hiddev md: means dekstop size*/}
+                    <div className="bg-radial from-sidebar-accent to-sidebar relative hidden md:flex flex-col items-center justify-center gap-y-4"> {/*this relative hidden when apply's when screen size become small means phone seide and the div get hiddev md: means dekstop size*/}
                         <img src='/logo.svg' className="w-[92px] h-[92px]" />
                         <p className="text-2xl font-semibold text-white">
                             Meet.AI
