@@ -14,9 +14,6 @@ function Layout({children}: prop) {
   //    {children}
   //   </div>
   // </div>
-
-
-  
   )
 }
 
