@@ -1,4 +1,4 @@
-import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import { CommandReponsiveDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { SetStateAction, Dispatch } from "react"
 
 interface props{
@@ -10,7 +10,7 @@ function DashboardCommand({open, setOpen}: props) {
 
 
   return (
-    <CommandDialog open={open} onOpenChange={setOpen} >
+    <CommandReponsiveDialog open={open} onOpenChange={setOpen} >
         <CommandInput placeholder="Find a meeting or agent" />
         <CommandList>
             <CommandEmpty>No results found.</CommandEmpty>
@@ -20,7 +20,7 @@ function DashboardCommand({open, setOpen}: props) {
                 <CommandItem>Calculator</CommandItem>
             </CommandGroup>
         </CommandList>
-    </CommandDialog>
+    </CommandReponsiveDialog>
   )
 }
 
