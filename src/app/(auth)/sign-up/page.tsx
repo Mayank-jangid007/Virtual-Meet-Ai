@@ -11,8 +11,7 @@ async function SignUp() {
       if(!!session){ // id session id true means true if session is null or undefined it will show false !! this will convert into true false 
         redirect('/')
       }
-    
-    
+      
     return <SignUpView />
 }
 

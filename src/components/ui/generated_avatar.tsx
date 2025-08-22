@@ -1,6 +1,7 @@
 import { createAvatar } from '@dicebear/core';
 import { lorelei, botttsNeutral, initials, dylan } from '@dicebear/collection';
 import { Avatar, AvatarFallback, AvatarImage } from './avatar';
+// import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { cn } from '@/lib/utils';
 
 
