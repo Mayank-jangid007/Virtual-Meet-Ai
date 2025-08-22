@@ -4,6 +4,10 @@
 // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
+// Bhai, Prisma schema file mein hum directly nanoid ya koi JS/TS import nahi kar sakte. 
+// Agar tumhe default value ke liye unique id chahiye, toh Prisma ke @default(uuid()) ya @default(cuid()) use kar sakte ho.
+// Agar tumhe nanoid ka use karna hai, toh woh tumhe apne application code (jaise ki JS/TS files) mein karna padega, Prisma schema mein nahi.
+
 generator client {
   provider = "prisma-client-js"
   output   = "../src/generated/prisma"
@@ -25,6 +29,7 @@ model User {
   updatedAt     DateTime
   sessions      Session[]
   accounts      Account[]
+  agents        Agent[]
 
   @@map("user")
 }
@@ -72,4 +77,14 @@ model Verification {
   updatedAt  DateTime?
 
   @@map("verification")
+}
+
+model Agent {
+  id           String   @id @default(uuid()) // or use @default(uuid())
+  name         String
+  userId       String
+  instructions String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
