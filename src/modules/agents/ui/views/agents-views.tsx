@@ -6,12 +6,25 @@ import { useTRPC } from '@/trpc/client'
 import { LoadingState } from '@/components/loading-state';
 import { ErrorState } from '@/components/error-state';
 import { ResponseiveDialog } from '@/components/reponsive-dialog';
+import { useState } from 'react';
+import { AgentForm } from '../components/agents-forms';
 import { Button } from '@/components/ui/button';
 
+
+// interface AgentViewProps {
+//     id: string
+// }
+  
+// export const AgentView = ({ id }: AgentViewProps) => {
 export const AgentView = () => {
+  
     const trpc = useTRPC();
-    // const { data, isLoading, isError } = useQuery(trpc.agetns.getMany.queryOptions())
-    const { data } = useSuspenseQuery(trpc.agetns.getMany.queryOptions())
+    // const { data, isLoading, isError } = useQuery(trpc.agents.getMany.queryOptions())
+    // const { data } = useSuspenseQuery(trpc.agents.getOne.queryOptions({id}))
+    const { data } = useSuspenseQuery(trpc.agents.getMany.queryOptions())
+    const [onOpen, setOnOpen] = useState(true)
+    console.log('--------data',data);
+    console.log('--------hi from agent');
 
     // if(isLoading){
     //     return <div>
@@ -36,10 +49,11 @@ export const AgentView = () => {
 
     return (
        <div>
-            <ResponseiveDialog title='Reponsive test' description='Reponsive description' open onOpenChange={() => {}}>
-                <Button>
+            <ResponseiveDialog title='Reponsive test' description='Reponsive description' open={onOpen} onOpenChange={setOnOpen}>
+                <Button onClick={() => setOnOpen(false)}>
                    Some action 
                 </Button>
+                {/* <AgentForm onSuccess={() => setOnOpen(false)} onCancel={() => setOnOpen(false)}  /> */}
             </ResponseiveDialog>
             {JSON.stringify(data, null, 2)}
        </div> 
