@@ -3,7 +3,7 @@ import { createTRPCRouter } from '../init';
 
 
 export const appRouter = createTRPCRouter({
-  agetns: agentsRouter,
+  agents: agentsRouter,
 });
 
 export type AppRouter = typeof appRouter;

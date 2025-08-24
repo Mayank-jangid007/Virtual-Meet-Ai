@@ -11,7 +11,7 @@ function Layout({children}: Props) {
    <SidebarProvider>
         <DashbaordSideBar />
         <main className="flex flex-col h-screen w-screen bg-muted">
-          <DashboardNavBar />
+          <DashboardNavBar />            
             {children}
         </main>
    </SidebarProvider>

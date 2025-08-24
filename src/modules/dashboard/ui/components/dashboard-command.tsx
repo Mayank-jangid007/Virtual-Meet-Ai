@@ -8,7 +8,6 @@ interface props{
 
 function DashboardCommand({open, setOpen}: props) {
 
-
   return (
     <CommandReponsiveDialog open={open} onOpenChange={setOpen} >
         <CommandInput placeholder="Find a meeting or agent" />
@@ -21,7 +20,7 @@ function DashboardCommand({open, setOpen}: props) {
             </CommandGroup>
         </CommandList>
     </CommandReponsiveDialog>
-  )
+  )            
 }
 
 export default DashboardCommand

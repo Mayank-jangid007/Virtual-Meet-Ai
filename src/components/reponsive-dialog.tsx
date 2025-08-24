@@ -58,8 +58,8 @@ export const ResponseiveDialog = ({
         <Dialog open={open} onOpenChange={onOpenChange} >
             <DialogContent>
                 <DialogHeader>
-                <DialogTitle>{title}</DialogTitle>
-                <DialogDescription>{description}</DialogDescription>
+                    <DialogTitle>{title}</DialogTitle>
+                    <DialogDescription>{description}</DialogDescription>
                 </DialogHeader>
                 {children}
             </DialogContent>
