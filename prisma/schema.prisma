@@ -87,4 +87,11 @@ model Agent {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @default(now())
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  meetings Meeting[] 
+}
+model Meeting {
+  id       String   @id @default(cuid())
+  topic    String
+  agentId  String
+  agent    Agent    @relation(fields: [agentId], references: [id])
 }
