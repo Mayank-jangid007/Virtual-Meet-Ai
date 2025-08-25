@@ -3,6 +3,7 @@ import { PrismaClient } from "@/generated/prisma";
 // import { TRPCError } from "@trpc/server";
 import { agentsInsertSchema } from "../schemas";
 import { z } from "zod";
+import { log } from "console";
 
 const prisma = new PrismaClient()
 
@@ -10,13 +11,25 @@ const prisma = new PrismaClient()
 
 export const agentsRouter = createTRPCRouter({
     getOne: protectedProcedure.input(z.object({ id: z.string() })).query(async ({ input }) =>{
+        // const data = await prisma.agent.findMany({
         const data = await prisma.agent.findUnique({
             where: { id: input.id },
+            include: {
+                _count: {
+                  select: { meetings: true },
+                },
+            },
         });
-        // await new Promise((resolve) => setTimeout(resolve, 5000))
-        // throw new TRPCError({code: 'Bad_REQUEST'});
 
-        return data;
+        
+        if (!data) {
+          return null;
+        }
+        const agentWithCount = {
+          ...data,
+          meetingCount: data._count.meetings, // flatten kar diya
+        };
+      return agentWithCount;
     }),
     getMany: protectedProcedure.query(async () => {
         const data = await prisma.agent.findMany({
