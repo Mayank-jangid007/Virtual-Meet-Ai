@@ -1,6 +1,6 @@
 "use client"
 
-import { useQuery, useSuspenseQuery } from '@tanstack/react-query'
+import { useSuspenseQuery } from '@tanstack/react-query'
  
 import { useTRPC } from '@/trpc/client'
 import { LoadingState } from '@/components/loading-state';
@@ -12,39 +12,20 @@ import { Button } from '@/components/ui/button';
 import { DataTable } from '../components/data-table';
 import { columns } from '../components/columns';
 import { EmptyState } from '@/components/empty-state';
-
+import { useAgentsFilter } from '../../hooks/use-agents-filter';
+import { DataPagination } from '../components/data-pagination';
+     
 
 
 export const AgentView = () => {
-  
+    const [filters, setFilters] = useAgentsFilter()
     const trpc = useTRPC();
     // const { data, isLoading, isError } = useQuery(trpc.agents.getMany.queryOptions())
     // const { data } = useSuspenseQuery(trpc.agents.getOne.queryOptions({id}))
-    const { data } = useSuspenseQuery(trpc.agents.getMany.queryOptions())
+    const { data } = useSuspenseQuery(trpc.agents.getMany.queryOptions({
+        ...filters,
+    }))
     const [onOpen, setOnOpen] = useState(true)
-    // console.log('--------data',data);
-    // console.log('--------hi from agent');
-
-    // if(isLoading){
-    //     return <div>
-    //         <LoadingState 
-    //             title='Loading Agents'
-    //             description='This may take a few seconds'
-    //         />
-    //     </div>
-    // }
-
-
-    // if(isError){
-    //     return(
-    //         <div>
-    //             <ErrorState 
-    //                 title='Error loading Agents'
-    //                 description='Please try again later'
-    //             />
-    //         </div>
-    //     )
-    // }
 
     return (
        <div className='flex-1 pb-4 px-4 md:px-8 flex flex-col gap-y-4'>
@@ -54,8 +35,13 @@ export const AgentView = () => {
                 </Button>
                 {/* <AgentForm onSuccess={() => setOnOpen(false)} onCancel={() => setOnOpen(false)}  /> */}
             </ResponseiveDialog>
-           <DataTable data={data} columns={columns} />
-           {data.length == 0 && (
+           <DataTable data={data.items} columns={columns} />
+           <DataPagination        
+                page={filters.page}
+                totalPage={data.totalPages}
+                onPageChange={(page) => setFilters({ page })}
+            />
+           {data.items.length == 0 && (
                 <EmptyState 
                     title='Create your first agent'
                     description='Create an agent to join your meetings. Each agent will follow your instructions and can interact with particiants during the call'
@@ -77,7 +63,7 @@ export function AgentsViewLoading() {
 }
 export function AgentsViewError() {
     return  <div>
-                 <ErrorState 
+                <ErrorState 
                     title='Error loading Agents'
                     description='Please try again later'
                 />

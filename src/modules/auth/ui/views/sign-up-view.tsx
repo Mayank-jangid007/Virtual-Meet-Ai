@@ -63,7 +63,7 @@ function SignUpView(){
                     setPeding(false)
                     // yahan pe router.push('/') ke baad router.refresh() bhi call karo
                     router.push('/')
-                    router.refresh() // yeh line add karo, taki session update ho jaye aur naya naam dikhe
+                    router.refresh() // this line update the session and show new user or current user
                 },
                 onError: ({error}) =>{
                     setError(error.message)

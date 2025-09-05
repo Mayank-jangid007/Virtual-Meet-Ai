@@ -1,6 +1,6 @@
 import { useTRPC } from "@/trpc/client";
 import { AgentGetOne } from "../types";
-import { useRouter } from "next/navigation";
+// import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -35,7 +35,7 @@ export const AgentForm = ({
     initialValues
 }: AgentFormProps) =>{
     const trpc = useTRPC();
-    const router = useRouter();
+    // const router = useRouter();
     const queryClient = useQueryClient();
 
     const createAgent = useMutation(
@@ -43,13 +43,13 @@ export const AgentForm = ({
             onSuccess: async () => {
                 // yahan pe getMany ki jagah getAll use karo, kyunki getMany exist nahi karta
                 await queryClient.invalidateQueries(
-                    trpc.agents.getMany.queryOptions()
+                    trpc.agents.getMany.queryOptions({})
                 );
 
                 if(initialValues?.id){
                     await queryClient.invalidateQueries(
-                        // trpc.agents.getOne.queryOptions({id: initialValues.id})
-                        trpc.agents.getMany.queryOptions()
+                        trpc.agents.getOne.queryOptions({id: initialValues.id})
+                        // trpc.agents.getMany.queryOptions({})
                     );
                 }
 
