@@ -1,33 +1,34 @@
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init"; 
 import { PrismaClient } from "@/generated/prisma";
-// import { TRPCError } from "@trpc/server";
 import { agentsInsertSchema } from "../schemas";
 import { z } from "zod";
 import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, MIN_PAGE_SIZE } from "@/constants";
+import { TRPCError } from "@trpc/server";
 
 const prisma = new PrismaClient()
 
 
 
 export const agentsRouter = createTRPCRouter({
-    getOne: protectedProcedure.input(z.object({ id: z.string() })).query(async ({ input }) =>{
+    getOne: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ input, ctx }) =>{
         // const data = await prisma.agent.findMany({
-        const data = await prisma.agent.findUnique({
-            where: { id: input.id },
+        const existingAgent = await prisma.agent.findUnique({
+            where: { id: input.id, userId: ctx.auth.user.id }, //   we are checking here ki this user ia author or creator using ctx.auth.user.id
             include: {
                 _count: {
                   select: { meetings: true },
                 },
             },
         });
-
         
-        if (!data) {
-          return null;
+        if (!existingAgent) {
+          throw new TRPCError({code: "NOT_FOUND", message: "Agent not found"})
         }
         const agentWithCount = {
-          ...data,
-          meetingCount: data._count.meetings, // flatten kar diya
+          ...existingAgent,
+          meetingCount: existingAgent._count.meetings, // flatten kar diya
         };
       return agentWithCount;
     }),
