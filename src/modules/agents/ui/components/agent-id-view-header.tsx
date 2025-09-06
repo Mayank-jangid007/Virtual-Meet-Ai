@@ -67,7 +67,7 @@ export const AgentIdViewHeader = ({
                         Edit
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={onRemove}>
-                        <PencilIcon className='size-4 text-black' />
+                        <TrashIcon className='size-4 text-black' />
                         Delete
                     </DropdownMenuItem>
                 </DropdownMenuContent>

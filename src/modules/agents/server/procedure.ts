@@ -1,6 +1,6 @@
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init"; 
 import { PrismaClient } from "@/generated/prisma";
-import { agentsInsertSchema } from "../schemas";
+import { agentsInsertSchema, agentsUpdateSchema } from "../schemas";
 import { z } from "zod";
 import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, MIN_PAGE_SIZE } from "@/constants";
 import { TRPCError } from "@trpc/server";
@@ -10,6 +10,47 @@ const prisma = new PrismaClient()
 
 
 export const agentsRouter = createTRPCRouter({
+    update: protectedProcedure
+    .input(agentsUpdateSchema)
+    .mutation(async ({ ctx, input }) => {
+        const updatedAgent = await prisma.agent.update({
+            where:{
+                id: input.id,
+                userId: ctx.auth.user.id
+            },
+            data: input
+        })
+
+        if(!updatedAgent){
+            throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'Agent not found',
+            })
+        }
+
+    }),
+
+
+    remove: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+        const removeAgent = await prisma.agent.delete({
+            where: {
+                id: input.id,
+                userId: ctx.auth.user.id
+            }
+        })
+        
+        if(!removeAgent){
+            throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'Agent not found',
+            })
+        }
+
+        return removeAgent
+
+    }), 
     getOne: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input, ctx }) =>{
