@@ -30,6 +30,7 @@ model User {
   sessions      Session[]
   accounts      Account[]
   agents        Agent[]
+  meetings       Meeting[]
 
   @@map("user")
 }
@@ -89,9 +90,37 @@ model Agent {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   meetings Meeting[] 
 }
+
 model Meeting {
-  id       String   @id @default(cuid())
-  topic    String
-  agentId  String
-  agent    Agent    @relation(fields: [agentId], references: [id])
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name            String
+  userId          String   @map("user_id")
+  agentId         String   @map("agent_id")
+  transcriptionUrl String?
+  recordingUrl     String?
+  summary          String?
+  status           MeetingStatus @default(UPCOMING)
+  startedAt        DateTime @default(now())
+  endedAt          DateTime?
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agent  Agent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
 }
+
+
+enum MeetingStatus {
+  UPCOMING
+  COMPLETED
+  CANCELLED
+}
+
+
+// model Meeting {
+//   id       String   @id @default(cuid())
+//   topic    String
+//   agentId  String
+//   agent    Agent    @relation(fields: [agentId], references: [id])
+// }
