@@ -28,6 +28,8 @@ export const agentsRouter = createTRPCRouter({
             })
         }
 
+        return updatedAgent
+
     }),
 
 
@@ -135,78 +137,6 @@ export const agentsRouter = createTRPCRouter({
     };
   }),
 
-    // getMany: protectedProcedure
-    // .input(z.object({
-    //     page: z.number().default(DEFAULT_PAGE),
-    //     pageSize: z
-    //     .number()
-    //     .min(MIN_PAGE_SIZE)
-    //     .max(MAX_PAGE_SIZE)
-    //     .default(DEFAULT_PAGE_SIZE),
-    //     search: z.string().nullish()
-    // }))
-
-    // .query(async ({ctx, input}) => {
-    //     const { search, page, pageSize } = input;
-        
-    //     const data = await prisma.agent.findMany({
-    //         orderBy: { createdAt: 'desc' },
-    //         include: {
-    //             _count: {
-    //               select: { meetings: true },
-    //             },
-    //         },
-    //     });
-    //     await prisma.agent.findMany({
-    //         where: {
-    //             // userId: ctx.auth.session.id
-    //             userId: ctx.auth.user.id,
-    //             ...(search && {
-    //                 name: {
-    //                     contains: search,
-    //                     mode: 'insensitive'
-    //                 }
-    //             })
-    //         },
-    //         orderBy: [
-    //             { createdAt: "desc" },
-    //             { id: "desc" },
-    //         ],
-    //         skip: (page - 1) * pageSize,
-    //         take: pageSize,
-    //     })
-    //     const total = await prisma.agent.count({
-    //         where: {
-    //           userId: ctx.auth.user.id,
-    //           ...(search
-    //             ? {
-    //                 name: {
-    //                   contains: search,
-    //                   mode: "insensitive",
-    //                 },
-    //               }
-    //             : {}),
-    //         },
-    //       });
-
-    //         const agents = data.map(agent => ({
-    //             ...agent,
-    //             meetingCount: agent._count.meetings,
-    //         }));
-
-          
-    //       const totalPages = Math.ceil(total / pageSize);
-
-
-          
-    //         return {
-    //             items: agents,
-    //             total: total,
-    //             totalPages
-    //         }
-    //         // return agents;
-
-    // }),
     create: protectedProcedure
     .input(agentsInsertSchema)
     .mutation(async ({input, ctx}) =>{
