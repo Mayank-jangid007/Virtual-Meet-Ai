@@ -206,17 +206,22 @@ export const meetingsRouter = createTRPCRouter({
     .query(async ({ input, ctx }) =>{
         const existingMeeting = await prisma.meeting.findUnique({
             where: { id: input.id, userId: ctx.auth.user.id },
-            include: {
-                // _count: {
-                //   select: { meetings: true },
-                // },
-            },
+            include: { agent: true, },
         });
         
         if (!existingMeeting) {
           throw new TRPCError({code: "NOT_FOUND", message: "Meeting not found"})
         }
-      return existingMeeting;
+
+        const duration = existingMeeting.endedAt && existingMeeting.startedAt
+        ? Math.floor(
+            (existingMeeting.endedAt.getTime() -
+              existingMeeting.startedAt.getTime()) /
+              1000
+          )
+        : null;
+
+      return {existingMeeting, duration};
     }),
 
     getMany: protectedProcedure
