@@ -125,9 +125,16 @@ export const meetingsRouter = createTRPCRouter({
         
             prisma.meeting.count({ where: whereClause }),
         ]);
-        
+
+        const meetingsWithDuration = meetings.map(m => ({
+            ...m,
+            duration: m.endedAt && m.startedAt 
+              ? Math.floor((+m.endedAt - +m.startedAt) / 1000) // seconds
+              : null,
+          }));
+            
         return {
-            items: meetings,
+            items: meetingsWithDuration,
             total,
             totalPages: Math.ceil(total / pageSize),
         };

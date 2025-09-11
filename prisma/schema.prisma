@@ -115,6 +115,8 @@ enum MeetingStatus {
   UPCOMING
   COMPLETED
   CANCELLED
+  PROCESSING
+  ACTIVE
 }
 
 
