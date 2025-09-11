@@ -223,6 +223,7 @@ export const meetingsRouter = createTRPCRouter({
 
       return {existingMeeting, duration};
     }),
+    
 
     getMany: protectedProcedure
     .input(
