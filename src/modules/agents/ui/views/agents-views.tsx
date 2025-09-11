@@ -9,12 +9,12 @@ import { ResponseiveDialog } from '@/components/reponsive-dialog';
 import { useState } from 'react';
 // import { AgentForm } from '../components/agents-forms';
 import { Button } from '@/components/ui/button';
-import { DataTable } from '../components/data-table';
 import { columns } from '../components/columns';
 import { EmptyState } from '@/components/empty-state';
 import { useAgentsFilter } from '../../hooks/use-agents-filter';
 import { DataPagination } from '../components/data-pagination';
 import { useRouter } from 'next/navigation';
+import { DataTable } from '@/components/data-table';
      
 
 
@@ -37,7 +37,7 @@ export const AgentView = () => {
                 </Button>
                 {/* <AgentForm onSuccess={() => setOnOpen(false)} onCancel={() => setOnOpen(false)}  /> */}
             </ResponseiveDialog>
-           <DataTable 
+           <DataTable
                 data={data.items}
                 columns={columns}
                 onRowClick={(row) => router.push(`agents/${row.id}`)} 
