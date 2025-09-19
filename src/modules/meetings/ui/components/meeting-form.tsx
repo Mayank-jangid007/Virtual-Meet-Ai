@@ -82,9 +82,9 @@ export const MeetingForm = ({
                     trpc.meetings.getMany.queryOptions({})
                 );
 
-                if(initialValues?.id){
+                if(initialValues?.existingMeeting.id){
                     await queryClient.invalidateQueries(
-                        trpc.meetings.getOne.queryOptions({id: initialValues.id})
+                        trpc.meetings.getOne.queryOptions({id: initialValues.existingMeeting.id})
                         // trpc.agents.getMany.queryOptions({})
                     );
                 }
@@ -100,18 +100,18 @@ export const MeetingForm = ({
     const form = useForm<z.infer<typeof meetingsInsertSchema>>({
         resolver: zodResolver(meetingsInsertSchema ),
         defaultValues: {
-            name: initialValues?.name ?? "",
-            agentId: initialValues?.agentId ?? "",
+            name: initialValues?.existingMeeting.name ?? "",
+            agentId: initialValues?.existingMeeting.agentId ?? "",
         }
     });
 
-    const isEdit = !! initialValues?.id;
+    const isEdit = !! initialValues?.existingMeeting.id;
     const isPending = createMeeting.isPending || updateMeeting.isPending;
    
     const onSubmit = (values: z.infer<typeof meetingsInsertSchema>) =>{
         console.log('🔘 Form submitted with values:', values);
         if (isEdit) {
-            updateMeeting.mutate({ ...values, id: initialValues.id })
+            updateMeeting.mutate({ ...values, id: initialValues.existingMeeting.id })
         } else {
             createMeeting.mutate(values);
         }
