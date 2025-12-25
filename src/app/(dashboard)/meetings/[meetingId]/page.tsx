@@ -17,6 +17,10 @@ interface Props{
 export default async function Page({ params }: Props) {
   const { meetingId } = await params;
 
+  if (!meetingId) {
+    redirect('/meetings');
+  }
+
   const session = await auth.api.getSession({
     headers: await headers()
   })

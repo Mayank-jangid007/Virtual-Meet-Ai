@@ -12,7 +12,11 @@ const prisma = new PrismaClient()
 export const agentsRouter = createTRPCRouter({
     update: protectedProcedure
     .input(agentsUpdateSchema)
-    .mutation(async ({ ctx, input }) => {
+    .mutation(async ({ ctx, input }) => { 
+    // In ctx(context object) we are getting every user session means user id and more this will get protectedprocedure we build middleware in every protectedProcedure we get the user seesion
+    // This ensures that only the logged-in user can update or delete their own agents.
+    
+
         const updatedAgent = await prisma.agent.update({
             where:{
                 id: input.id,

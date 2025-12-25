@@ -24,7 +24,7 @@ export const AgentView = () => {
     const trpc = useTRPC();
     // const { data, isLoading, isError } = useQuery(trpc.agents.getMany.queryOptions())
     // const { data } = useSuspenseQuery(trpc.agents.getOne.queryOptions({id}))
-    const { data } = useSuspenseQuery(trpc.agents.getMany.queryOptions({
+    const { data } = useSuspenseQuery(trpc.agents.getMany.queryOptions({ // On the client side, inside AgentView, useSuspenseQuery first checks the cache. If the data is already there, it uses it immediately.If the data is not in the cache, it makes a network request. After hydration, the data is usually already in the cache, so no extra request is needed.”
         ...filters,
     }))
     const [onOpen, setOnOpen] = useState(true)

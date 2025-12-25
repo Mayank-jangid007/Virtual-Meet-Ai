@@ -26,6 +26,11 @@ export const MeetingIdView = ({ meetingId }: Props) =>{
         'Are you sure',
         'The following action will remove this meeting'
     )
+    
+    if (!meetingId) {
+        return <div>Meeting ID is required</div>;
+    }
+    
     const { data } = useSuspenseQuery(
         trpc.meetings.getOne.queryOptions({ id: meetingId }),
     )
@@ -75,7 +80,7 @@ export const MeetingIdView = ({ meetingId }: Props) =>{
                 {isActive && <ActiveState meetingId={meetingId} />}
                 {isUpcoming && (
                     <UpcomingState 
-                        meetingId="meetingId"
+                        meetingId={meetingId}
                         onCancleMeeting={() => {}}
                         isCancelling={false}
                     />
