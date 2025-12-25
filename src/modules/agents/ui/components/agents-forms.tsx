@@ -38,11 +38,10 @@ export const AgentForm = ({
     // const router = useRouter();
     const queryClient = useQueryClient();
 
-    const createAgent = useMutation(
-        trpc.agents.create.mutationOptions({
-            onSuccess: async () => {
-                // yahan pe getMany ki jagah getAll use karo, kyunki getMany exist nahi karta
-                await queryClient.invalidateQueries(
+    const createAgent = useMutation( // “ In tRPC, useMutation is used with mutationOptions and useMutation executes a mutation request and manages its loading, success, and error states.”
+        trpc.agents.create.mutationOptions({// In tRPC, mutationOptions gives us all the options related to a mutation — the endpoint to call, the input/output types, and success or error handlers.
+            onSuccess: async () => { // when result comes and it  success then onSuccess callback run 
+                await queryClient.invalidateQueries( // We use invalidateQueries(...) to refresh the list so that the new agent appears in the list
                     trpc.agents.getMany.queryOptions({})
                 );
    
@@ -54,11 +53,10 @@ export const AgentForm = ({
             }
         })
     )
-    const updateAgent = useMutation(
-        trpc.agents.update.mutationOptions({
+    const updateAgent = useMutation( 
+        trpc.agents.update.mutationOptions({ 
             onSuccess: async () => {
-                // yahan pe getMany ki jagah getAll use karo, kyunki getMany exist nahi karta
-                await queryClient.invalidateQueries(
+                await queryClient.invalidateQueries( 
                     trpc.agents.getMany.queryOptions({})
                 );
 
@@ -90,7 +88,7 @@ export const AgentForm = ({
    
     const onSubmit = (values: z.infer<typeof agentsInsertSchema>) =>{
         if (isEdit) {
-            updateAgent.mutate({ ...values, id: initialValues.id })
+            updateAgent.mutate({ ...values, id: initialValues.id }) // mutation means “Now send the request with this data. on the server”
         } else {
             createAgent.mutate (values);
         }

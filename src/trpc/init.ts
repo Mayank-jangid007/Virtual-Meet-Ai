@@ -3,6 +3,9 @@ import { initTRPC, TRPCError } from '@trpc/server'
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 
+// “This file acts as the core setup for tRPC. It defines the router creator, a base procedure, 
+// and an auth-protected procedure. All other feature routers, such as agents and meetings, build their endpoints using these shared utilities.”
+
 export const createTRPCContext = cache (async () => {
 return { userId: 'user_123' };
 });
