@@ -38,5 +38,8 @@ export const auth = betterAuth({
             maxAge: 60 * 60 * 24 * 7, // 7 days
         },
     },
-    trustedOrigins: ["http://localhost:3000"],
+    trustedOrigins: [
+        "http://localhost:3000",
+        "https://pseudoangelically-undangerous-fairy.ngrok-free.dev",
+    ],
 });
