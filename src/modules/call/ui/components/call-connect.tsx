@@ -67,7 +67,7 @@ export const CallConnect = ({
         setCall(_call);
 
         return () => {
-            if(_call.state.callingState === CallingState.CONNECTED){
+            if(_call.state.callingState === CallingState.JOINED){
                 _call.leave();
                 _call.endCall();
                 setCall(undefined);

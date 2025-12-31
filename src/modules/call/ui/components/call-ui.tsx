@@ -15,6 +15,13 @@ export const CallUI = ({ meetingName }: Props) =>{
     const handleJoin = async () =>{
         if(!call) return;
         
+        // Enable microphone when joining so agent can hear the user
+        try {
+            await call.microphone.enable();
+        } catch (error) {
+            console.warn('⚠️ Could not enable microphone:', error);
+        }
+        
         await call.join();
         
         setShow('call');

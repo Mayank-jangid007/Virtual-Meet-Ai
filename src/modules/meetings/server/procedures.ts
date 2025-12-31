@@ -142,8 +142,35 @@ export const meetingsRouter = createTRPCRouter({
                     variant: 'botttsNeutral'
                 })
             }
-          ])
+          ]);
 
+        // Connect agent to call immediately (don't wait for webhook)
+        // This ensures agent is ready when user joins
+        try {
+            if (!process.env.OPENAI_API_KEY) {
+                console.error('⚠️ OPENAI_API_KEY is missing! Agent will not connect.');
+            } else {
+                console.log('🤖 Connecting agent to call:', existingAgent.id);
+                const realtimeClient = await streamVideo.video.connectOpenAi({
+                    call,
+                    openAiApiKey: process.env.OPENAI_API_KEY,
+                    agentUserId: existingAgent.id
+                });
+
+                // Configure agent session with instructions
+                realtimeClient.updateSession({
+                    instructions: existingAgent.instructions
+                });
+                
+                console.log('✅ Agent connected successfully');
+                console.log('📝 Agent instructions:', existingAgent.instructions.substring(0, 100) + '...');
+            }
+        } catch (error) {
+            // Log error but don't fail meeting creation
+            // Agent will connect via webhook if this fails
+            console.error('❌ Failed to connect agent on meeting create:', error);
+        }
+ //------
         return createdMeeting;
     }),
     getOne: protectedProcedure
