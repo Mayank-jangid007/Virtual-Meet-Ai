@@ -26,7 +26,7 @@ export const MEETING_STATUS_VALUES = {
     COMPLETED: MeetingStatus.COMPLETED,
     PROCESSING: MeetingStatus.PROCESSING,
     CANCELLED: MeetingStatus.CANCELLED,
-  } as const; // as const → make values readonly + exact banata hai (type narrowing).
+} as const; // as const → make values readonly + exact banata hai (type narrowing).
 
 export type StreamTranscriptItem = {
   speaker_id: string;
@@ -35,3 +35,10 @@ export type StreamTranscriptItem = {
   start_ts: string;
   stop_ts: number;
 }
+
+// export type TranscriptItem = {
+//   text: string;
+//   speakerId?: string;
+//   start?: number;
+//   end?: number;
+// };

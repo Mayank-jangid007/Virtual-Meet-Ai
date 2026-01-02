@@ -3,16 +3,128 @@
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init"; 
 import {  Prisma, PrismaClient, MeetingStatus } from "@/generated/prisma"; // Import MeetingStatus from Prisma
 import { z } from "zod";
+import JSONL from "jsonl-parse-stringify";
 import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, MIN_PAGE_SIZE } from "@/constants";
 import { TRPCError } from "@trpc/server";
 import { meetingsInsertSchema, meetingsUpdateSchema } from "../schemas";
 import { GeneratedAvatarUri } from "@/lib/avatar";
 import { streamVideo } from "@/lib/stream-video";
+import { StreamTranscriptItem } from "../types";
+import { streamChat } from "@/lib/stream-chat";
 // Remove this import: import { MeetingStatus } from "../types";
 
 const prisma = new PrismaClient()
 
 export const meetingsRouter = createTRPCRouter({
+    generateChatToken: protectedProcedure.mutation(async ({ ctx }) => {
+        const token = streamChat.createToken(ctx.auth.user.id);
+        await streamChat.upsertUser({
+            id: ctx.auth.user.id,
+            role: 'admin'
+        })
+
+        return token;
+    }),
+    
+    getTranscript: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ input, ctx }) => {
+        const existingMeeting = await prisma.meeting.findFirst({
+            where:{
+                id: input.id,
+                userId: ctx.auth.user.id,
+            }
+        })  
+        
+        if (!existingMeeting) {
+            throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'Meeting not found',
+            })
+        }
+
+        if(!existingMeeting.transcriptionUrl) {
+            return [];
+        }
+
+        const transcript = await fetch(existingMeeting.transcriptionUrl)
+            .then((res) => res.text())
+            .then((text) => JSONL.parse<StreamTranscriptItem>(text))
+            .catch(() => {
+                return [];
+            })
+
+        const speakerIds = [
+
+            ...new Set(transcript.map((item) => item.speaker_id))
+        ]
+
+        const users = await prisma.user.findMany({
+            where: {
+              id: {
+                in: speakerIds,
+              },
+            },
+          });
+          
+          const userSpeakers = users.map((user) => ({
+            ...user,
+            image:
+              user.image ??
+              GeneratedAvatarUri({
+                seed: user.name as string,
+                variant: "initials",
+            }),
+        }));     
+
+        const agent = await prisma.agent.findMany({
+            where: {
+              id: {
+                in: speakerIds,
+              },
+            },
+          });
+          
+          const agentSpeakers = agent.map((agent) => ({
+            ...agent,
+            image: GeneratedAvatarUri({
+                seed: agent.name as string,
+                variant: "botttsNeutral",
+            }),
+        }));    
+        
+        const speakers = [...userSpeakers, ...agentSpeakers];
+
+        const transcriptWithSpeakers = transcript.map((item) => {
+            const speaker = speakers.find((speaker) => speaker.id === item.speaker_id)
+
+            if(!speaker){
+
+                return {
+                    ...item,
+                    user: {
+                        name: 'Unknown',
+                        image: GeneratedAvatarUri({
+                            seed: 'Unknown',
+                            variant: 'initials'
+                        })
+                    }
+                }
+            }
+
+            return {
+                ...item,
+                user: {
+                    name: speaker.name,
+                    image: speaker.image
+                }
+            }
+
+        })
+
+        return transcriptWithSpeakers;
+
+    }),
 
     generateToken: protectedProcedure.mutation(async ({ ctx }) => {
         await streamVideo.upsertUsers([
