@@ -1,10 +1,26 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { PrismaClient } from "@/generated/prisma";
- 
+import { polar, checkout, portal } from '@polar-sh/better-auth'
+import { polarClient } from "./polar"; 
+
 const prisma = new PrismaClient();
 
 export const auth = betterAuth({
+    baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
+    plugins: [
+        polar({
+            client: polarClient,
+            createCustomerOnSignUp: true,
+            use: [
+                checkout({
+                    authenticatedUsersOnly: true,
+                    successUrl: '/upgrade',
+                }),
+                portal(),
+            ]
+        }),
+    ],
     socialProviders: {
         github: { 
             clientId: process.env.GITHUB_CLIENT_ID as string, 

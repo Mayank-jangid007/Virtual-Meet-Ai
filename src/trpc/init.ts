@@ -2,9 +2,14 @@ import { cache } from "react";
 import { initTRPC, TRPCError } from '@trpc/server'
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import { polarClient } from "@/lib/polar";
+import { PrismaClient } from "@/generated/prisma";
+import { MAX_FREEE_AGENTS, MAX_FREEE_MEETINGS } from "@/modules/premium/constant";
 
 // “This file acts as the core setup for tRPC. It defines the router creator, a base procedure, 
 // and an auth-protected procedure. All other feature routers, such as agents and meetings, build their endpoints using these shared utilities.”
+
+const prisma = new PrismaClient()
 
 export const createTRPCContext = cache (async () => {
 return { userId: 'user_123' };
@@ -45,6 +50,43 @@ export const protectedProcedure = baseProcedure.use(async ({ ctx, next }) => {
     });
 });
 
-// const session = await auth.api.getSession({ // so this is how we can excess sessions on server side
-//     headers: await headers(),
-// })
+export const premiumProcedure = (entity: "meetings" | "agents") =>
+    protectedProcedure.use(async ({ ctx, next}) => {
+    const customer = await polarClient.customers.getStateExternal({
+        externalId: ctx.auth.user.id,
+    });
+
+    const userMeetings = await prisma.meeting.count({
+        where: {
+          userId: ctx.auth.user.id,
+        },
+    });
+
+    const userAgent = await prisma.agent.count({
+        where: {
+          userId: ctx.auth.user.id,
+        },
+    });
+
+    const isPremium = customer.activeSubscriptions.length > 0;
+    const isFreeAgentLimitReached = userAgent >= MAX_FREEE_AGENTS;
+    const isFreeMeetingLimitReached = userMeetings >= MAX_FREEE_MEETINGS;
+    const shouldThrowMeetingError = entity === "meetings" && isFreeMeetingLimitReached && !isPremium;
+    const shouldThrowAgentError = entity === "agents" && isFreeAgentLimitReached && !isPremium;
+
+
+    if (shouldThrowMeetingError) {
+        throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You have reached the maximum number of free meetings",
+        });
+    }
+    if (shouldThrowAgentError) {
+        throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You have reached the maximum number of free agents",
+        });
+    }
+
+    return next({ ctx: {...ctx, customer} })
+})
