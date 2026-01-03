@@ -1,6 +1,6 @@
 
 
-import { createTRPCRouter, protectedProcedure } from "@/trpc/init"; 
+import { createTRPCRouter, premiumProcedure, protectedProcedure } from "@/trpc/init"; 
 import {  Prisma, PrismaClient, MeetingStatus } from "@/generated/prisma"; // Import MeetingStatus from Prisma
 import { z } from "zod";
 import JSONL from "jsonl-parse-stringify";
@@ -191,7 +191,7 @@ export const meetingsRouter = createTRPCRouter({
         return updatedMeeting
 
     }),
-    create: protectedProcedure
+    create: premiumProcedure('meetings')
     .input(meetingsInsertSchema)
     .mutation(async ({input, ctx}) =>{
         const  createdMeeting  = await prisma.meeting.create({
@@ -256,33 +256,35 @@ export const meetingsRouter = createTRPCRouter({
             }
           ]);
 
+        //------ 
         // Connect agent to call immediately (don't wait for webhook)
         // This ensures agent is ready when user joins
-        try {
-            if (!process.env.OPENAI_API_KEY) {
-                console.error('⚠️ OPENAI_API_KEY is missing! Agent will not connect.');
-            } else {
-                console.log('🤖 Connecting agent to call:', existingAgent.id);
-                const realtimeClient = await streamVideo.video.connectOpenAi({
-                    call,
-                    openAiApiKey: process.env.OPENAI_API_KEY,
-                    agentUserId: existingAgent.id
-                });
+        // try {
+        //     if (!process.env.OPENAI_API_KEY) {
+        //         console.error('⚠️ OPENAI_API_KEY is missing! Agent will not connect.');
+        //     } else {
+        //         console.log('🤖 Connecting agent to call:', existingAgent.id);
+        //         const realtimeClient = await streamVideo.video.connectOpenAi({
+        //             call,
+        //             openAiApiKey: process.env.OPENAI_API_KEY,
+        //             agentUserId: existingAgent.id
+        //         });
 
-                // Configure agent session with instructions
-                realtimeClient.updateSession({
-                    instructions: existingAgent.instructions
-                });
+        //         // Configure agent session with instructions
+        //         realtimeClient.updateSession({
+        //             instructions: existingAgent.instructions
+        //         });
                 
-                console.log('✅ Agent connected successfully');
-                console.log('📝 Agent instructions:', existingAgent.instructions.substring(0, 100) + '...');
-            }
-        } catch (error) {
-            // Log error but don't fail meeting creation
-            // Agent will connect via webhook if this fails
-            console.error('❌ Failed to connect agent on meeting create:', error);
-        }
- //------
+        //         console.log('✅ Agent connected successfully');
+        //         console.log('📝 Agent instructions:', existingAgent.instructions.substring(0, 100) + '...');
+        //     }
+        // } catch (error) {
+        //     // Log error but don't fail meeting creation
+        //     // Agent will connect via webhook if this fails
+        //     console.error('❌ Failed to connect agent on meeting create:', error);
+        // }
+        //------
+        console.log('✅ Meeting and call created, agent will connect when user joins (via webhook)');
         return createdMeeting;
     }),
     getOne: protectedProcedure

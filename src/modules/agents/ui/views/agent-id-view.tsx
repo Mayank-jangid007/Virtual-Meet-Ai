@@ -31,6 +31,9 @@ export const AgentIdView = ({ agentId }: Props) =>{
         trpc.agents.remove.mutationOptions({
             onSuccess: async () =>{
                 await queryClient.invalidateQueries(trpc.agents.getMany.queryOptions({}));
+                await queryClient.invalidateQueries( // We use invalidateQueries(...) to refresh the list so that the new agent appears in the list
+                    trpc.premium.getFreeUsage.queryOptions()
+                );
                 router.push('/agents')
             },
             onError: (error) =>{
