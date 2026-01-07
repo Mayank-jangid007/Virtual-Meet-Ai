@@ -47,7 +47,7 @@ export const AgentIdViewHeader = ({
                     </BreadcrumbSeparator>
                     <BreadcrumbItem>
                         <BreadcrumbLink asChild className='front-medium text-foreground'>
-                            <Link href={`/agents${agentId}`}>
+                            <Link href={`/agents/${agentId}`}>
                                 {agentName}
                             </Link>
                         </BreadcrumbLink>
