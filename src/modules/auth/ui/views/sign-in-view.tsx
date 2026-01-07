@@ -16,7 +16,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 
 // the reason why we are making an saprate sign-in-view becouse we dont want ki all things are render on client side the logic render client side beocuse
-// react events all are available on client side that's why we make saprate compoennt and ther father things are render on server side
+// react events all are available on client side that's why we make saprate component and ther father things are render on server side
 
 const formSchema = z.object({
     email: z.string().email(),
@@ -166,10 +166,10 @@ function SignInView(){
                                     </Button>
                                 </div>
                                 <div className='flex flex-col items-center text-muted-foreground'>
-                                        Don&apos;t have an account?
-                                        <Link href='/sign-up' className='underline underline-offset-4 text-muted-foreground hover:text-blue-300'>
-                                            Sign up
-                                        </Link>
+                                    Don&apos;t have an account?
+                                    <Link href='/sign-up' className='underline underline-offset-4 text-muted-foreground hover:text-blue-300'>
+                                        Sign up
+                                    </Link>
                                 </div>
                             </div>
                         </form>

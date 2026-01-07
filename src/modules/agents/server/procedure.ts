@@ -95,6 +95,8 @@ export const agentsRouter = createTRPCRouter({
   .query(async ({ ctx, input }) => {
     const { search, page, pageSize } = input;
 
+    
+
     // build where clause
     const whereClause = {
       userId: ctx.auth.user.id,

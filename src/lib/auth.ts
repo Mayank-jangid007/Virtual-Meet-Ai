@@ -56,6 +56,6 @@ export const auth = betterAuth({
     },
     trustedOrigins: [
         "http://localhost:3000",
-        "https://pseudoangelically-undangerous-fairy.ngrok-free.dev",
+        "https://cheryl-nontroubling-thuggishly.ngrok-free.dev"
     ],
 });

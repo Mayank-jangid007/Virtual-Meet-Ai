@@ -12,7 +12,6 @@ import {
     ClockFadingIcon,
     CornerDownRightIcon,
     LoaderIcon,
-    VideoIcon,
     HelpCircleIcon, // ✅ 1. IMPORT A FALLBACK ICON
 } from "lucide-react"
 
