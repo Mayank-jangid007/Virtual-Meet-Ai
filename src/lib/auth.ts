@@ -56,6 +56,7 @@ export const auth = betterAuth({
     },
     trustedOrigins: [
         "http://localhost:3000",
-        "https://cheryl-nontroubling-thuggishly.ngrok-free.dev"
+        "https://cheryl-nontroubling-thuggishly.ngrok-free.dev",
+        "https://virtual-meet-ai-8pd1.vercel.app"
     ],
 });
