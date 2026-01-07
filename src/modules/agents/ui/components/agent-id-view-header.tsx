@@ -13,7 +13,7 @@ import {
     DropdownMenuContent
 } from '@/components/ui/dropdown-menu'
 
-import { ChevronRightIcon, TrashIcon, PencilIcon, MoreVertical, MoreVerticalIcon} from 'lucide-react';
+import { ChevronRightIcon, TrashIcon, PencilIcon, MoreVerticalIcon} from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 

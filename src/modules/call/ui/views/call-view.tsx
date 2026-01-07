@@ -12,11 +12,12 @@ interface Props {
 export const CallView = ({ meetingId }: Props) => {
     const trpc = useTRPC();
     
+    
+    const  { data } = useSuspenseQuery(trpc.meetings.getOne.queryOptions({ id: meetingId }))
+    
     if (!meetingId) {
         return <div>Meeting ID is required</div>;
     }
-    
-    const  { data } = useSuspenseQuery(trpc.meetings.getOne.queryOptions({ id: meetingId }))
 
     if(data.existingMeeting.status === MeetingStatus.COMPLETED){
         return (
