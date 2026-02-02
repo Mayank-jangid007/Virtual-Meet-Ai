@@ -1,61 +1,117 @@
-import { OpenAI } from "openai"; 
+import { OpenAI } from "openai";
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
 import { NextRequest, NextResponse } from "next/server";
 
-import { MessageNewEvent, CallEndedEvent, CallTranscriptionReadyEvent, CallSessionParticipantLeftEvent, CallRecordingReadyEvent, CallSessionStartedEvent } from "@stream-io/node-sdk";
+import { MessageNewEvent, CallEndedEvent, CallTranscriptionReadyEvent, CallSessionParticipantLeftEvent, CallRecordingReadyEvent, CallSessionStartedEvent, CallSessionParticipantJoinedEvent } from "@stream-io/node-sdk";
 
-import { PrismaClient, MeetingStatus } from "@/generated/prisma";
+import { MeetingStatus } from "@/generated/prisma";
 
 import { streamVideo } from '@/lib/stream-video'
 import { GeneratedAvatarUri } from '@/lib/avatar';
 import { inngest } from "@/inngest/client";
 import { streamChat } from "@/lib/stream-chat";
+import { prisma } from "@/lib/prisma";
+// import { CallSessionParticipantJoinedEvent } from "@stream-io/video-react-sdk";
 
 
 const openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
-const prisma = new PrismaClient();
 
 function verifySignatureWithSDK(body: string, signature: string): boolean {
     return streamVideo.verifyWebhook(body, signature)
-}   
+}
 
-export async function POST(req: NextRequest){
-    console.log('WEBHOOK CALLED!'); 
+export async function POST(req: NextRequest) {
+    console.log('WEBHOOK CALLED!');
     const signature = req.headers.get('x-signature');
     const apiKey = req.headers.get('x-api-key');
 
-    if(!signature || !apiKey){
+    if (!signature || !apiKey) {
         return NextResponse.json(
-            { error: 'Missing signature or API Key' },   
-            { status: 400 }   
+            { error: 'Missing signature or API Key' },
+            { status: 400 }
         )
     }
 
     const body = await req.text();
 
-    if(!verifySignatureWithSDK(body, signature)){
+    if (!verifySignatureWithSDK(body, signature)) {
         return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
     }
 
     let payload: unknown;
-    
+
     try {
         payload = JSON.parse(body) as Record<string, unknown>;
     } catch {
-        return NextResponse.json({ error: 'Invalid JSON'}, { status: 400 })
+        return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
     }
 
     const eventType = (payload as Record<string, unknown>)?.type;
 
     console.log("📡 Webhook Event:", eventType);
 
-    if(eventType === 'call.session_started'){
+
+    //-----------------------//-----------------------//-----------------------//-----------------------
+
+    if (eventType === 'call.session_participant_joined') {
+        const event = payload as CallSessionParticipantJoinedEvent;
+        const meetingId = event.call_cid.split(':')[1];
+        const userId = event.participant.user.id;
+
+        console.log("👤 Participant joined:", userId);
+
+        // Record in database (if not already done via joinMeeting mutation)
+        await prisma.meetingParticipant.upsert({
+            where: {
+                meetingId_userId: {
+                    meetingId,
+                    userId,
+                },
+            },
+            create: {
+                meetingId,
+                userId,
+                role: event.participant.user.role === 'admin' ? 'HOST' : 'PARTICIPANT',
+            },
+            update: {
+                leftAt: null,
+                joinedAt: new Date(),
+            },
+        });
+    }
+
+    if (eventType === 'call.session_participant_left') {
+        const event = payload as CallSessionParticipantLeftEvent;
+        const meetingId = event.call_cid.split(':')[1];
+        const userId = event.participant.user.id;
+
+        console.log("👋 Participant left:", userId);
+
+        // Update database
+        await prisma.meetingParticipant.updateMany({
+            where: {
+                meetingId,
+                userId,
+                leftAt: null,
+            },
+            data: {
+                leftAt: new Date(),
+            },
+        });
+        // Don't end call automatically - only end when host explicitly ends
+    }
+
+
+    //-----------------------//-----------------------
+
+
+    if (eventType === 'call.session_started') {
         const event = payload as CallSessionStartedEvent;
         const meetingId = event.call.custom?.meetingId;
 
         console.log("🎯 Session Started - Meeting ID:", meetingId);
 
-        if(!meetingId) {
+        if (!meetingId) {
             return NextResponse.json({ error: 'Missing meetingId' }, { status: 400 });
         }
 
@@ -63,20 +119,20 @@ export async function POST(req: NextRequest){
             where: { id: meetingId }
         });
 
-        if(!existingMeeting) {
+        if (!existingMeeting) {
             console.error("❌ Meeting not found:", meetingId);
             return NextResponse.json({ error: 'Meeting not found' }, { status: 404 });
         }
 
-        
-        if(existingMeeting.status === MeetingStatus.COMPLETED || 
-           existingMeeting.status === MeetingStatus.CANCELLED ||
-           existingMeeting.status === MeetingStatus.ACTIVE) {
+
+        if (existingMeeting.status === MeetingStatus.COMPLETED ||
+            existingMeeting.status === MeetingStatus.CANCELLED ||
+            existingMeeting.status === MeetingStatus.ACTIVE) {
             console.log("⏭️ Meeting already active/processed, skipping agent connection");
             return NextResponse.json({ status: 'ok' });
         }
 
-        
+
         await prisma.meeting.update({
             where: { id: existingMeeting.id },
             data: {
@@ -86,17 +142,17 @@ export async function POST(req: NextRequest){
         });
         console.log('✅ Meeting status updated to ACTIVE, connecting agent...');
 
-        
+
         const existingAgent = await prisma.agent.findUnique({
             where: { id: existingMeeting.agentId }
         });
 
-        if(!existingAgent) {
+        if (!existingAgent) {
             console.error(" Agent not found:", existingMeeting.agentId);
             return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
         }
 
-        
+
         await streamVideo.upsertUsers([
             {
                 id: existingAgent.id,
@@ -110,84 +166,92 @@ export async function POST(req: NextRequest){
         ]);
 
         const call = streamVideo.video.call('default', meetingId);
-        
-        // Connect OpenAI agent
-        try {
-            if (!process.env.OPENAI_API_KEY) {
-                console.error(' OPENAI_API_KEY is missing!');
-                return NextResponse.json({ error: 'OpenAI API key not configured' }, { status: 500 });
-            }
 
-            console.log('🤖 Connecting agent to call:', existingAgent.id);
-            
-            const realtimeClient = await streamVideo.video.connectOpenAi({
-                call,
-                openAiApiKey: process.env.OPENAI_API_KEY,
-                agentUserId: existingAgent.id
-            });
+        // Connect OpenAI agent---------------------
+        // try {
+        //     if (!process.env.OPENAI_API_KEY) {
+        //         console.error(' OPENAI_API_KEY is missing!');
+        //         return NextResponse.json({ error: 'OpenAI API key not configured' }, { status: 500 });
+        //     }
 
-            // Update agent instructions
-            realtimeClient.updateSession({
-                instructions: existingAgent.instructions,
-                voice: 'alloy',
-                turn_detection: {
-                    type: 'server_vad',
-                    threshold: 0.5,
-                    prefix_padding_ms: 300,
-                    silence_duration_ms: 500
-                }
-            });
-            
-            console.log('✅ Agent connected successfully');
-            console.log('📝 Instructions:', existingAgent.instructions.substring(0, 100) + '...');
-            
-        } catch (error) {
-            console.error(' Failed to connect agent:', error);
-            return NextResponse.json({ 
-                error: 'Failed to connect agent',
-                details: error instanceof Error ? error.message : 'Unknown error'
-            }, { status: 500 });
-        }
+        //     console.log('🤖 Connecting agent to call:', existingAgent.id);
+
+        //     const realtimeClient = await streamVideo.video.connectOpenAi({
+        //         call,
+        //         openAiApiKey: process.env.OPENAI_API_KEY,
+        //         agentUserId: existingAgent.id
+        //     });
+
+        //     // Update agent instructions
+        //     realtimeClient.updateSession({
+        //         instructions: existingAgent.instructions,
+        //         voice: 'alloy',
+        //         turn_detection: {
+        //             type: 'server_vad',
+        //             threshold: 0.5,
+        //             prefix_padding_ms: 300,
+        //             silence_duration_ms: 500
+        //         }
+        //     });
+
+        //     console.log('✅ Agent connected successfully');
+        //     console.log('📝 Instructions:', existingAgent.instructions.substring(0, 100) + '...');
+
+        // } catch (error) {
+        //     console.error(' Failed to connect agent:', error);
+        //     return NextResponse.json({ 
+        //         error: 'Failed to connect agent',
+        //         details: error instanceof Error ? error.message : 'Unknown error'
+        //     }, { status: 500 });
+        // }
 
     } else if (eventType === 'call.session_participant_left') {
         const event = payload as CallSessionParticipantLeftEvent;
         const meetingId = event.call_cid.split(':')[1];
 
-        console.log(" Participant left - Meeting ID:", meetingId);
+        console.log("🚪 Participant left - Meeting ID:", meetingId);
+        console.log("🚪 Participant:", event.participant?.user?.id);
 
-        if(!meetingId){             
-            return NextResponse.json({ error: 'Missing meetingId' }, { status: 400 });
-        }
+        // ❌ DO NOT end the call when a participant leaves!
+        // This was causing all participants to be kicked when anyone (including agent) left
+        // The call should only end when the host explicitly ends it or all participants leave naturally
 
-        const call = streamVideo.video.call('default', meetingId);
-        await call.end();
+        // if (!meetingId) {
+        //     return NextResponse.json({ error: 'Missing meetingId' }, { status: 400 });
+        // }
+
+        // const call = streamVideo.video.call('default', meetingId);
+        // await call.end(); // ❌ This ends the call for EVERYONE!
+
+        // Optional: You could track participant count here and end only if last person leaves
+        // But for now, just let participants leave naturally without ending the call
 
     } else if (eventType === 'call.session_ended') {
-        const event  = payload as CallEndedEvent
-        const meetingId  = event.call.custom?.meetingId;
+        const event = payload as CallEndedEvent
+        const meetingId = event.call.custom?.meetingId;
 
         console.log(" Session ended - Meeting ID:", meetingId);
 
-        if(!meetingId){             
+        if (!meetingId) {
             return NextResponse.json({ error: 'Missing meetingId' }, { status: 400 });
         }
 
         await prisma.meeting.updateMany({
             where: {
-              id: meetingId,
-              status: MeetingStatus.ACTIVE,
+                id: meetingId,
+                status: MeetingStatus.ACTIVE,
             },
             data: {
-              status: MeetingStatus.PROCESSING,
-              endedAt: new Date(),
+                status: MeetingStatus.PROCESSING,
+                endedAt: new Date(),
             },
-        }); 
+        });
 
         console.log('✅ Meeting status updated to PROCESSING');
 
     } else if (eventType === 'call.transcription_ready') {
-        const event  = payload as CallTranscriptionReadyEvent;
-        const meetingId  = event.call_cid.split(':')[1];
+        const event = payload as CallTranscriptionReadyEvent;
+        const meetingId = event.call_cid.split(':')[1];
 
         console.log("📝 Transcription ready - Meeting ID:", meetingId);
 
@@ -200,7 +264,7 @@ export async function POST(req: NextRequest){
 
         console.log('✅ Transcription URL saved:', event.call_transcription.url);
 
-        if(!updatedMeeting) {
+        if (!updatedMeeting) {
             return NextResponse.json({ error: "Meeting not found" }, { status: 404 });
         }
 
@@ -227,7 +291,7 @@ export async function POST(req: NextRequest){
 
         console.log('✅ Recording URL saved:', event.call_recording.url);
 
-    } else if(eventType === 'message.new') {
+    } else if (eventType === 'message.new') {
         const event = payload as MessageNewEvent;
         const userId = event.user?.id;
         const channelId = event.channel_id;
@@ -238,7 +302,7 @@ export async function POST(req: NextRequest){
         if (!userId || !channelId || !text) {
             return NextResponse.json(
                 { error: "Missing required fields" },
-                { status: 400}
+                { status: 400 }
             );
         }
 
@@ -248,11 +312,11 @@ export async function POST(req: NextRequest){
                 status: MeetingStatus.COMPLETED,
             },
         });
-        
+
         if (!existingMeeting) {
             return NextResponse.json({ error: "Meeting not found" }, { status: 404 });
         }
-        
+
         const existingAgent = await prisma.agent.findUnique({
             where: { id: existingMeeting.agentId },
         });
@@ -261,7 +325,7 @@ export async function POST(req: NextRequest){
             return NextResponse.json({ error: "Agent not found" }, { status: 404 });
         }
 
-        if(userId !== existingAgent.id) {
+        if (userId !== existingAgent.id) {
             const instructions = `
                 You are an AI assistant helping the user revisit a recently completed meeting.
                 Below is a summary of the meeting, generated from the transcript:
@@ -289,15 +353,15 @@ export async function POST(req: NextRequest){
                 .slice(-5)
                 .filter((msg) => msg.text && msg.text.trim() !== "")
                 .map<ChatCompletionMessageParam>((message) => ({
-                 role: message.user?.id === existingAgent.id ? "assistant" : "user",
-                 content: message.text || "",
+                    role: message.user?.id === existingAgent.id ? "assistant" : "user",
+                    content: message.text || "",
                 }));
 
             const GPTResponse = await openaiClient.chat.completions.create({
                 messages: [
                     { role: "system", content: instructions },
                     ...previousMessages,
-                    { role: "user", content: text},
+                    { role: "user", content: text },
                 ],
                 model: "gpt-4o",
             });
@@ -306,14 +370,14 @@ export async function POST(req: NextRequest){
             if (!GPTResponseText) {
                 return NextResponse.json(
                     { error: "No response from GPT" },
-                    { status: 400}
+                    { status: 400 }
                 );
             }
-            
-            const avatarUrl = GeneratedAvatarUri({ 
+
+            const avatarUrl = GeneratedAvatarUri({
                 seed: existingAgent.name,
                 variant: "botttsNeutral",
-            });  
+            });
 
             await streamChat.upsertUser({
                 id: existingAgent.id,

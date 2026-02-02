@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "dev:webhook": "ngrok http --url=cheryl-nontroubling-thuggishly.ngrok-free.dev 3000"
+    "dev:webhook": "ngrok http --url=unconvergent-daughterlike-demarcus.ngrok-free.dev 3000"
   },
   "dependencies": {
     "@dicebear/collection": "^9.2.4",
@@ -54,6 +54,7 @@
     "@trpc/server": "^11.1.2",
     "@trpc/tanstack-react-query": "^11.1.2",
     "better-auth": "^1.2.8",
+    "bufferutil": "^4.1.0",
     "class-variance-authority": "^0.7.1",
     "client-only": "^0.0.1",
     "clsx": "^2.1.1",
@@ -85,6 +86,7 @@
     "stream-chat": "^9.27.2",
     "stream-chat-react": "^13.13.1",
     "tailwind-merge": "^3.3.1",
+    "utf-8-validate": "^6.0.6",
     "vaul": "^1.1.2",
     "zod": "^4.3.4"
   },

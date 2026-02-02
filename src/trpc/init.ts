@@ -5,14 +5,13 @@ import { headers } from "next/headers";
 import { polarClient } from "@/lib/polar";
 import { PrismaClient } from "@/generated/prisma";
 import { MAX_FREEE_AGENTS, MAX_FREEE_MEETINGS } from "@/modules/premium/constant";
+import { prisma } from "@/lib/prisma";
 
 // “This file acts as the core setup for tRPC. It defines the router creator, a base procedure, 
 // and an auth-protected procedure. All other feature routers, such as agents and meetings, build their endpoints using these shared utilities.”
 
-const prisma = new PrismaClient()
-
-export const createTRPCContext = cache (async () => {
-return { userId: 'user_123' };
+export const createTRPCContext = cache(async () => {
+    return { userId: 'user_123' };
 });
 
 const t = initTRPC.create({
@@ -51,42 +50,51 @@ export const protectedProcedure = baseProcedure.use(async ({ ctx, next }) => {
 });
 
 export const premiumProcedure = (entity: "meetings" | "agents") =>
-    protectedProcedure.use(async ({ ctx, next}) => {
-    const customer = await polarClient.customers.getStateExternal({
-        externalId: ctx.auth.user.id,
-    });
+    protectedProcedure.use(async ({ ctx, next }) => {
+        let isPremium = false;
 
-    const userMeetings = await prisma.meeting.count({
-        where: {
-          userId: ctx.auth.user.id,
-        },
-    });
+        // Try to get customer from Polar, but don't fail if not found
+        try {
+            const customer = await polarClient.customers.getStateExternal({
+                externalId: ctx.auth.user.id,
+            });
+            isPremium = customer.activeSubscriptions.length > 0;
+        } catch (error) {
+            // Customer not found in Polar - treat as free user
+            console.log('Polar customer not found in premiumProcedure, treating as free user:', ctx.auth.user.id);
+            isPremium = false;
+        }
 
-    const userAgent = await prisma.agent.count({
-        where: {
-          userId: ctx.auth.user.id,
-        },
-    });
-
-    const isPremium = customer.activeSubscriptions.length > 0;
-    const isFreeAgentLimitReached = userAgent >= MAX_FREEE_AGENTS;
-    const isFreeMeetingLimitReached = userMeetings >= MAX_FREEE_MEETINGS;
-    const shouldThrowMeetingError = entity === "meetings" && isFreeMeetingLimitReached && !isPremium;
-    const shouldThrowAgentError = entity === "agents" && isFreeAgentLimitReached && !isPremium;
-
-
-    if (shouldThrowMeetingError) {
-        throw new TRPCError({
-            code: "FORBIDDEN",
-            message: "You have reached the maximum number of free meetings",
+        const userMeetings = await prisma.meeting.count({
+            where: {
+                userId: ctx.auth.user.id,
+            },
         });
-    }
-    if (shouldThrowAgentError) {
-        throw new TRPCError({
-            code: "FORBIDDEN",
-            message: "You have reached the maximum number of free agents",
-        });
-    }
 
-    return next({ ctx: {...ctx, customer} })
-})
+        const userAgent = await prisma.agent.count({
+            where: {
+                userId: ctx.auth.user.id,
+            },
+        });
+
+        const isFreeAgentLimitReached = userAgent >= MAX_FREEE_AGENTS;
+        const isFreeMeetingLimitReached = userMeetings >= MAX_FREEE_MEETINGS;
+        const shouldThrowMeetingError = entity === "meetings" && isFreeMeetingLimitReached && !isPremium;
+        const shouldThrowAgentError = entity === "agents" && isFreeAgentLimitReached && !isPremium;
+
+
+        if (shouldThrowMeetingError) {
+            throw new TRPCError({
+                code: "FORBIDDEN",
+                message: "You have reached the maximum number of free meetings",
+            });
+        }
+        if (shouldThrowAgentError) {
+            throw new TRPCError({
+                code: "FORBIDDEN",
+                message: "You have reached the maximum number of free agents",
+            });
+        }
+
+        return next({ ctx: { ...ctx, customer: null } })
+    })

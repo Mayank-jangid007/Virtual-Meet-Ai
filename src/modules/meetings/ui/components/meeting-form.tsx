@@ -1,4 +1,3 @@
-
 import { useTRPC } from "@/trpc/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -7,6 +6,8 @@ import { meetingsInsertSchema } from "../../schemas";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button"; 
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 import { 
     Form,
@@ -68,10 +69,6 @@ export const MeetingForm = ({
                 );
 
                 onSuccess?.(data.id)
-
-                // if (data?.id) {
-                //     router.push(`/meetings/${data.id}`);  // ✅ navigate after create
-                // }
             },
             onError: (error) => {
                 toast.error(error.message)
@@ -86,7 +83,6 @@ export const MeetingForm = ({
     const updateMeeting = useMutation(
         trpc.meetings.update.mutationOptions({
             onSuccess: async () => {
-                // yahan pe getMany ki jagah getAll use karo, kyunki getMany exist nahi karta
                 await queryClient.invalidateQueries(
                     trpc.meetings.getMany.queryOptions({})
                 );
@@ -94,7 +90,6 @@ export const MeetingForm = ({
                 if(initialValues?.existingMeeting.id){
                     await queryClient.invalidateQueries(
                         trpc.meetings.getOne.queryOptions({id: initialValues.existingMeeting.id})
-                        // trpc.agents.getMany.queryOptions({})
                     );
                 }
 
@@ -107,10 +102,12 @@ export const MeetingForm = ({
     );
 
     const form = useForm<z.infer<typeof meetingsInsertSchema>>({
-        resolver: zodResolver(meetingsInsertSchema ),
+        resolver: zodResolver(meetingsInsertSchema),
         defaultValues: {
             name: initialValues?.existingMeeting.name ?? "",
             agentId: initialValues?.existingMeeting.agentId ?? "",
+            // ensure isPublic is always present (boolean) to align with the schema type
+            isPublic: initialValues?.existingMeeting.isPublic ?? false,
         }
     });
 
@@ -118,7 +115,7 @@ export const MeetingForm = ({
     const isPending = createMeeting.isPending || updateMeeting.isPending;
    
     const onSubmit = (values: z.infer<typeof meetingsInsertSchema>) =>{
-        console.log('🔘 Form submitted with values:', values);
+        console.log(' Form submitted with values:', values);
         if (isEdit) {
             updateMeeting.mutate({ ...values, id: initialValues.existingMeeting.id })
         } else {
@@ -130,11 +127,10 @@ export const MeetingForm = ({
         <>
             <NewAgentDialog open={openNewAgentDialog} onOpenChange={setOpenNewAgentDialog}/>
             <Form {...form}>
-                <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
-                
+                <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit as any)}>
                     <FormField
-                        name='name'
-                        control={form.control}
+                        name="name"
+                        control={form.control as any}
                         render={({field}) => (
                             <FormItem>
                                 <FormLabel>Name</FormLabel>
@@ -148,7 +144,7 @@ export const MeetingForm = ({
 
                     <FormField
                         name='agentId'
-                        control={form.control}
+                        control={form.control as any}
                         render={({field}) => (
                             <FormItem>
                                 <FormLabel>Agent</FormLabel>
@@ -207,10 +203,22 @@ export const MeetingForm = ({
                             {isEdit? "Update" : "Create"}
                         </Button>
                     </div>
+                    <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                            <Label htmlFor="isPublic">Public Meeting</Label>
+                            <p className="text-sm text-muted-foreground">
+                            Anyone with the link can join
+                            </p>
+                        </div>
+                        <Switch
+                            id="isPublic"
+                            checked={form.watch("isPublic")}
+                            onCheckedChange={(checked) => form.setValue("isPublic", checked)}
+                        />
+                    </div>
                 </form>
             </Form>
         </>
     )
 
 }
-
