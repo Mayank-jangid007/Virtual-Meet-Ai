@@ -31,6 +31,9 @@ model User {
   accounts      Account[]
   agents        Agent[]
   meetings       Meeting[]
+  participations   MeetingParticipant[]       // NEW: meetings joined
+  sentInvitations  MeetingInvitation[]    @relation("SentInvitations")    // NEW: invitations sent
+
 
   @@map("user")
 }
@@ -104,10 +107,65 @@ model Meeting {
   endedAt          DateTime?
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
+  
+  // NEW: Agent status
+  agentActive           Boolean   @default(false)
+  agentConnectedAt      DateTime? @map("agent_connected_at")
+  agentDisconnectedAt   DateTime? @map("agent_disconnected_at")
+  agentTotalDuration    Int?       @map("agent_total_duration")
+
+  // NEW: Access control
+  isPublic         Boolean  @default(false) // Anyone with link can join
+  maxParticipants  Int?     @default(10)    // null = unlimited
 
   // Relations
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  agent  Agent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agent        Agent             @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  participants MeetingParticipant[] // NEW
+  invitations  MeetingInvitation[]  // NEW
+}
+model MeetingParticipant {
+  id         String   @id @default(cuid())
+  meetingId  String   @db.Uuid @map("meeting_id") 
+  userId     String   @map("user_id")
+  joinedAt   DateTime @default(now()) @map("joined_at")
+  leftAt     DateTime? @map("left_at")
+  role       ParticipantRole @default(PARTICIPANT)
+  
+  meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([meetingId, userId])
+  @@map("meeting_participant")
+}
+
+// NEW: Track invitations
+model MeetingInvitation {
+  id         String   @id @default(cuid())
+  meetingId  String    @db.Uuid @map("meeting_id")  
+  email      String
+  invitedBy  String   @map("invited_by")
+  sentAt     DateTime @default(now()) @map("sent_at")
+  status     InvitationStatus @default(PENDING)
+  
+  meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  inviter User    @relation("SentInvitations", fields: [invitedBy], references: [id])
+
+  @@unique([meetingId, email])
+  @@map("meeting_invitation")
+}
+
+enum ParticipantRole {
+  HOST
+  CO_HOST
+  PARTICIPANT
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
 }
 
 
@@ -126,3 +184,4 @@ enum MeetingStatus {
 //   agentId  String
 //   agent    Agent    @relation(fields: [agentId], references: [id])
 // }
+

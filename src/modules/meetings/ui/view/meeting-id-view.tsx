@@ -14,6 +14,9 @@ import { ActiveState } from "../components/active-state";
 import { CancelledState } from "../components/cancelled-state";
 import { ProcessingState } from "../components/processing-state";
 import { CompletedState } from "../components/completed-state";
+import { InviteParticipantsDialog } from "../components/invite-participants-dialog";
+import { Button } from "@/components/ui/button";
+import { User } from "lucide-react";
 
 interface Props{
     meetingId: string;
@@ -23,6 +26,7 @@ export const MeetingIdView = ({ meetingId }: Props) =>{
     const trpc = useTRPC();
     const router = useRouter();
     const queryClient = useQueryClient();
+    const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
     const [RemoveConfirmation, confirmRemove] = useConfirm(
         'Are you sure',
         'The following action will remove this meeting'
@@ -88,6 +92,16 @@ export const MeetingIdView = ({ meetingId }: Props) =>{
                     />
                 )}
             </div>
+                <Button onClick={() => setInviteDialogOpen(true)}>
+                    <User className="h-4 w-4 mr-2" />
+                    Invite Participants
+                </Button>
+
+            <InviteParticipantsDialog
+                meetingId={meetingId}
+                open={inviteDialogOpen}
+                onOpenChange={setInviteDialogOpen}
+            />
         </>
     )
 }

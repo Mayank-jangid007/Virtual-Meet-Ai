@@ -5,6 +5,9 @@ import { LoaderIcon } from 'lucide-react';
 import { authClient } from '@/lib/auth-client';
 import { GeneratedAvatarUri } from '@/lib/avatar';
 import { CallConnect } from './call-connect';
+import { useTRPC } from '@/trpc/client';
+import { useQuery } from '@tanstack/react-query';
+import { CallControls, CallParticipantsList, SpeakerLayout, StreamCall, StreamTheme, StreamVideo } from '@stream-io/video-react-sdk';
 
 interface Props {
     meetingId: string;    
@@ -12,6 +15,7 @@ interface Props {
 }
 
 export const CallProvider = ({ meetingId, meetingName }: Props) => {
+    const trpc = useTRPC();
     const { data, isPending } = authClient.useSession();
 
     if(!data || isPending) {
@@ -22,8 +26,13 @@ export const CallProvider = ({ meetingId, meetingName }: Props) => {
         )
     }
 
+    const { data: participants } = useQuery({
+        ...trpc.meetings.getParticipants.queryOptions({ meetingId }),
+        refetchInterval: 5000, // Refresh every 5 seconds
+    });
+
     return (
-       <CallConnect
+        <CallConnect
             meetingId={meetingId}
             meetingName={meetingName}
             userId={data.user.id}
@@ -38,3 +47,4 @@ export const CallProvider = ({ meetingId, meetingName }: Props) => {
         />
     )
 }
+

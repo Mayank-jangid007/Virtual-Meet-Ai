@@ -1,8 +1,9 @@
 import { inngest } from "@/inngest/client";
 import JSONL from 'jsonl-parse-stringify'
 import { StreamTranscriptItem } from "@/modules/meetings/types";
-import { MeetingStatus, PrismaClient } from "@/generated/prisma";
+import { MeetingStatus } from "@/generated/prisma";
 import { createAgent, openai, TextMessage } from '@inngest/agent-kit'
+import { prisma } from "@/lib/prisma";
 
 
 const summarizer = createAgent({
@@ -26,11 +27,9 @@ Example:
 #### Next Section
 - Feature X automatically does Y
 - Mention of integration with Z`
-  .trim(),
+    .trim(),
   model: openai({ model: 'gpt-4o', apiKey: process.env.OPENAI_API_KEY })
 })
-
-const prisma = new PrismaClient()
 
 export const meetingsProcessing = inngest.createFunction(
   { id: 'meetings/processing' },
@@ -48,7 +47,7 @@ export const meetingsProcessing = inngest.createFunction(
     const transcript = await step.run('parse-transcript', async () => {
       // const text = await response.text(); //-- isko comment krna hia 
       // return JSONL.parse<StreamTranscriptItem>(text);
-      return JSONL.parse<StreamTranscriptItem>(response); 
+      return JSONL.parse<StreamTranscriptItem>(response);
     });
 
     const transcriptWithSpeakers = await step.run('add-speakers', async () => {
@@ -64,7 +63,7 @@ export const meetingsProcessing = inngest.createFunction(
         })
       ).map((users) => ({
         ...users,
-      }));    
+      }));
 
       const agentSpeakers = (
         await prisma.agent.findMany({
@@ -74,7 +73,7 @@ export const meetingsProcessing = inngest.createFunction(
         })
       ).map((agents) => ({
         ...agents,
-      }));      
+      }));
 
       const speakers = [...userSpeakers, ...agentSpeakers];
 
@@ -83,7 +82,7 @@ export const meetingsProcessing = inngest.createFunction(
           (speaker) => speaker.id === item.speaker_id
         );
 
-        if(!speaker){
+        if (!speaker) {
           return {
             ...item,
             user: {
@@ -103,12 +102,12 @@ export const meetingsProcessing = inngest.createFunction(
     });
 
     const { output } = await summarizer.run(
-      "Summarize the following transcript:" + 
-        JSON.stringify(transcriptWithSpeakers)
-    ); 
+      "Summarize the following transcript:" +
+      JSON.stringify(transcriptWithSpeakers)
+    );
 
     await step.run('save-summary', async () => {
-      await prisma.meeting.update({  
+      await prisma.meeting.update({
         where: {
           id: event.data.meetingId,
         },

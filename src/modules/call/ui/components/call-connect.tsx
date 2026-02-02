@@ -1,8 +1,9 @@
+// src/modules/meetings/ui/components/call-connect.tsx
 "use client";
 
 import { LoaderIcon } from "lucide-react";
 import { useEffect, useState } from "react";
-import {  useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
     Call,
     CallingState,
@@ -17,11 +18,11 @@ import "@stream-io/video-react-sdk/dist/css/styles.css";
 import { CallUI } from "./call-ui";
 
 interface Props {
-   meetingId: string;
-   meetingName: string;
-   userId: string;
-   userName: string;
-   userImage: string; 
+    meetingId: string;
+    meetingName: string;
+    userId: string;
+    userName: string;
+    userImage: string;
 };
 
 export const CallConnect = ({
@@ -30,14 +31,24 @@ export const CallConnect = ({
     userId,
     userImage,
     userName
-}: Props) =>{
-
-
+}: Props) => {
     const trpc = useTRPC();
-    const { mutateAsync: generateToken } = useMutation(trpc.meetings.generateToken.mutationOptions());
+
+    // ✅ Use useQuery instead of useMutation
+    const { data: tokenData } = useQuery(
+        trpc.meetings.generateToken.queryOptions()
+    );
 
     const [client, setClient] = useState<StreamVideoClient>();
+
     useEffect(() => {
+        if (!tokenData) return;
+
+        // ✅ Create a token provider function that returns just the token string
+        const tokenProvider = async () => {
+            return tokenData.token;
+        };
+
         const _client = new StreamVideoClient({
             apiKey: process.env.NEXT_PUBLIC_STREAM_VIDEO_API_KEY!,
             user: {
@@ -45,7 +56,7 @@ export const CallConnect = ({
                 name: userName,
                 image: userImage,
             },
-            tokenProvider: generateToken,
+            tokenProvider, // ✅ Now returns Promise<string>
         });
 
         setClient(_client);
@@ -53,42 +64,42 @@ export const CallConnect = ({
         return () => {
             _client.disconnectUser();
             setClient(undefined);
-        } 
-
-    }, [userId, userName, userImage, generateToken]);
+        };
+    }, [userId, userName, userImage, tokenData]);
 
     const [call, setCall] = useState<Call>();
+
     useEffect(() => {
-        if(!client) return
+        if (!client) return;
 
         const _call = client.call('default', meetingId);
         _call.camera.disable();
         _call.microphone.disable();
+
         setCall(_call);
 
         return () => {
-            if(_call.state.callingState === CallingState.JOINED){
+            if (_call.state.callingState === CallingState.JOINED) {
                 _call.leave();
                 _call.endCall();
                 setCall(undefined);
             }
-        }
+        };
     }, [client, meetingId]);
 
-    if(!client || !call) {
+    if (!client || !call) {
         return (
             <div className="flex h-screen items-center justify-center bg-radial from-sidebar-accent to-sidebar">
                 <LoaderIcon className="size-6 animate-spin text-white" />
             </div>
-        )
+        );
     }
 
     return (
         <StreamVideo client={client}>
             <StreamCall call={call}>
-                <CallUI meetingName={meetingName} />
+                <CallUI meetingName={meetingName} meetingId={meetingId} />
             </StreamCall>
         </StreamVideo>
-    )
-
-}
+    );
+};

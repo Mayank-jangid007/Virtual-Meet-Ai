@@ -1,7 +1,7 @@
 "use client"
 
 import { useSuspenseQuery } from '@tanstack/react-query'
- 
+
 import { useTRPC } from '@/trpc/client'
 import { LoadingState } from '@/components/loading-state';
 import { ErrorState } from '@/components/error-state';
@@ -15,7 +15,7 @@ import { useAgentsFilter } from '../../hooks/use-agents-filter';
 import { DataPagination } from '../components/data-pagination';
 import { useRouter } from 'next/navigation';
 import { DataTable } from '@/components/data-table';
-     
+
 
 
 export const AgentView = () => {
@@ -30,48 +30,48 @@ export const AgentView = () => {
     const [onOpen, setOnOpen] = useState(true)
 
     return (
-       <div className='flex-1 pb-4 px-4 md:px-8 flex flex-col gap-y-4'>
-            <ResponseiveDialog title='Reponsive test' description='Reponsive description' open={onOpen} onOpenChange={setOnOpen}>
+        <div className='flex-1 pb-4 px-4 md:px-8 flex flex-col gap-y-4'>
+            {/* <ResponseiveDialog title='Reponsive test' description='Reponsive description' open={onOpen} onOpenChange={setOnOpen}>
                 <Button onClick={() => setOnOpen(false)}>
-                   Some action 
+                    Some action
                 </Button>
                 {/* <AgentForm onSuccess={() => setOnOpen(false)} onCancel={() => setOnOpen(false)}  /> */}
-            </ResponseiveDialog>
-           <DataTable
+            {/* </ResponseiveDialog> */}
+            <DataTable
                 data={data.items}
                 columns={columns}
-                onRowClick={(row) => router.push(`/agents/${row.id}`)} 
+                onRowClick={(row) => router.push(`/agents/${row.id}`)}
             />
-           <DataPagination        
+            <DataPagination
                 page={filters.page}
                 totalPage={data.totalPages}
                 onPageChange={(page) => setFilters({ page })}
             />
-           {data.items.length == 0 && (
-                <EmptyState 
+            {data.items.length == 0 && (
+                <EmptyState
                     title='Create your first agent'
                     description='Create an agent to join your meetings. Each agent will follow your instructions and can interact with particiants during the call'
                 />
-           )}
-       </div> 
-    ) 
+            )}
+        </div>
+    )
 
-    
+
 }
 
 export function AgentsViewLoading() {
     return <div>
-             <LoadingState 
-                title='Loading Agents'
-                description='This may take a few seconds'
-            />
-        </div>
+        <LoadingState
+            title='Loading Agents'
+            description='This may take a few seconds'
+        />
+    </div>
 }
 export function AgentsViewError() {
-    return  <div>
-                <ErrorState 
-                    title='Error loading Agents'
-                    description='Please try again later'
-                />
-            </div>
+    return <div>
+        <ErrorState
+            title='Error loading Agents'
+            description='Please try again later'
+        />
+    </div>
 }

@@ -2,8 +2,9 @@ import { z } from "zod";
 
 export const meetingsInsertSchema = z.object({
     name: z.string().min(1, {message: 'Name is required'}),
-    // userId: z.string().min(1, {message: 'Agent is required'}),
-    agentId: z.string().min(1, {message: 'Agent is required'})
+    agentId: z.string().min(1, {message: 'Agent is required'}),
+    // Make isPublic a non-optional boolean with a default so TS infers `boolean` (not `boolean|undefined`)
+    isPublic: z.boolean().default(false),
 })
 
 export const meetingsUpdateSchema = meetingsInsertSchema.extend({

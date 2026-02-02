@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/empty-state";
 import { useRouter } from "next/navigation";
 import { useMeetingsFilter } from "../../hooks/use-meetings-filter";
 import { DataPagination } from "@/components/data-pagination";
+import { InviteParticipantsDialog } from "../components/invite-participants-dialog";
 
 export const MeetingView = () =>{
 
@@ -21,6 +22,11 @@ export const MeetingView = () =>{
 
     return (
         <div className="flex-1 pb-4 px-4 md:px-8 flex flex-col gap-y-4">
+            {/* <InviteParticipantsDialog 
+                meetingId={data.items[0]?.id} 
+                open={true} 
+                onOpenChange={() => {}} 
+            /> */}
             <DataTable 
                 data={data.items}
                 columns={columns} 
